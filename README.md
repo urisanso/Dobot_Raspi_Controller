@@ -1,7 +1,13 @@
-# 🦾 Control del Dobot Magician desde Raspberry Pi
+# 🦾 Dobot Raspi Controller
 
-Proyecto para controlar el **Dobot Magician (modelo común, no Lite)** directamente desde una **Raspberry Pi**, sin PC intermedia ni DobotLink.  
-Incluye scripts de homing, control cartesiano, control articular y modo manual por teclado.
+Control del **Dobot Magician (modelo común, no Lite)** directamente desde una **Raspberry Pi**,  
+sin necesidad de PC intermedia ni software DobotLink.
+
+El proyecto permite:
+- Control cartesiano y articular.
+- Homing y succión controlada.
+- Control manual por teclado (modo jog).
+- Extensible para integración con visión artificial o redes neuronales.
 
 ---
 
@@ -15,8 +21,12 @@ source venv/bin/activate
 pip install pydobot
 ```
 
-> ⚠️ Asegurate de estar en la Raspberry Pi OS 64 bits (`aarch64`)  
-> y de tener `numpy` funcionando (`python -c "import numpy; print(numpy.__version__)"`).
+> ⚠️ Asegurate de usar Raspberry Pi OS 64 bits (`aarch64`)  
+> y que `numpy` funcione correctamente:
+>
+> ```bash
+> python -c "import numpy; print(numpy.__version__)"
+> ```
 
 ---
 
@@ -24,6 +34,7 @@ pip install pydobot
 
 1. Conectá el Dobot por **USB**.  
 2. Verificá el puerto asignado:
+
    ```bash
    ls /dev/tty*
    ```
@@ -95,7 +106,7 @@ device.close()
 
 Archivo: `dobot_jog_joints.py`
 
-Controla las 4 juntas usando `curses` (no GUI, ideal para terminal SSH).
+Controla las 4 juntas usando `curses` (sin GUI, ideal para terminal SSH).
 
 | Joint | Teclas | Movimiento |
 |:------|:-------|:------------|
@@ -139,7 +150,21 @@ Listados automáticamente desde `pydobot.enums.PTPMode`:
 
 ---
 
+## 📦 6. Clonar y ejecutar
+
+```bash
+git clone https://github.com/urisanso/Dobot_Raspi_Controller.git
+cd Dobot_Raspi_Controller
+python3 -m venv venv
+source venv/bin/activate
+pip install pydobot
+python dobot_cartesian_demo.py
+```
+
+---
+
 ## 👨‍🔧 Créditos
 
-Scripts y documentación adaptados para Raspberry Pi + Dobot Magician (modelo común) usando la librería `pydobot`.  
-Versión verificada: Python 3.11 / pydobot 1.3.x / ARM 64 (aarch64)
+Proyecto desarrollado por **Uriel Sansoni**  
+Repositorio oficial: [github.com/urisanso/Dobot_Raspi_Controller](https://github.com/urisanso/Dobot_Raspi_Controller)  
+Probado en: Raspberry Pi 4B (aarch64) + Dobot Magician (no Lite) + Python 3.11

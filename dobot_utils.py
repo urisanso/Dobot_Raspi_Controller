@@ -1,49 +1,94 @@
-# dobot_utils.py 
+# dobot_utils.py
+#!/usr/bin/env python3 
 import time, json
+from pydobot import enums
 
-def home(device):
-    """HOME real (G28)."""
+# ==================== FUNCIONES DE MOVIMIENTO ====================
+
+def home_fisico(device):
+    """
+    Realiza el homing físico real del Dobot.
+    (Simula el G28 pero con la API de pydobot)
+    """
     try:
-        device.ser.write(b'G28\n')
-        device.ser.flush()
-        time.sleep(5)
-        print("✅ Home ejecutado.")
+        print("🏠 Ejecutando HOME físico...")
+        device._set_queued_cmd_clear()
+        device._set_ptp_cmd(
+            x=200, y=0, z=50, r=0,
+            mode=enums.PTPMode.MOVJ_XYZ, wait=True
+        )
+        print("✅ Home físico completado.")
     except Exception as e:
-        print(f"⚠️ Error haciendo home: {e}")
+        print(f"⚠️ Error en home físico: {e}")
 
-def go_home(device, puntos):
+
+def home_logico(device, puntos):
+    """
+    Va al punto guardado 'P_HOME' si existe.
+    """
     if "P_HOME" not in puntos:
-        print("⚠️ No hay punto HOME guardado.")
+        print("⚠️ No hay punto 'P_HOME' guardado.")
         return
     x, y, z, r = puntos["P_HOME"]
     move_to_xyzr(device, x, y, z, r, wait=True)
+    print("✅ Home lógico completado.")
 
-def suck(device, state: bool):
-    try:
-        cmd = b'M2231 V1\n' if state else b'M2231 V0\n'
-        device.ser.write(cmd); device.ser.flush()
-        print(f"✅ Bomba {'ON' if state else 'OFF'}.")
-    except Exception as e:
-        print(f"⚠️ Error bomba: {e}")
 
 def move_to_xyzr(device, x, y, z, r, wait=True):
+    """
+    Movimiento cartesiano a coordenadas (x, y, z, r).
+    """
     try:
         device.move_to(x, y, z, r, wait=wait)
     except Exception as e:
         print(f"⚠️ Error moviendo XYZR: {e}")
 
-def move_joints(device, j1, j2, j3, j4, speed=5000):
-    """Movimiento articular real (G220)."""
+
+def move_joints(device, j1, j2, j3, j4, wait=True):
+    """
+    Movimiento por juntas (modo 4 = MOVJ_ANGLE)
+    """
     try:
-        gcode = f'G220 J1 {j1:.3f} J2 {j2:.3f} J3 {j3:.3f} J4 {j4:.3f} F{speed}\n'
-        device.ser.write(gcode.encode()); device.ser.flush()
+        device._set_ptp_cmd(
+            x=j1, y=j2, z=j3, r=j4,
+            mode=enums.PTPMode.MOVJ_ANGLE,
+            wait=wait
+        )
     except Exception as e:
         print(f"⚠️ Error moviendo joints: {e}")
 
+
+def suck(device, state: bool):
+    """
+    Activa o desactiva la bomba de vacío.
+    """
+    try:
+        device._set_end_effector_suction_cup(enable=state, on=True)
+        print(f"✅ Bomba {'ON' if state else 'OFF'}.")
+    except Exception as e:
+        print(f"⚠️ Error bomba: {e}")
+
+
+def clear_alarm(device):
+    """
+    Limpia alarmas internas y cola de comandos.
+    """
+    try:
+        device._set_queued_cmd_clear()
+        device._set_queued_cmd_start_exec()
+        print("✅ Alarmas y cola limpiadas.")
+    except Exception as e:
+        print(f"⚠️ Error clear alarm: {e}")
+
+# ==================== FUNCIONES DE PERSISTENCIA ====================
+
 def save_points(puntos, filename="puntos.json"):
-    with open(filename, "w") as f:
-        json.dump(puntos, f, indent=4)
-    print("💾 Puntos guardados.")
+    try:
+        with open(filename, "w") as f:
+            json.dump(puntos, f, indent=4)
+        print("💾 Puntos guardados.")
+    except Exception as e:
+        print(f"⚠️ Error guardando puntos: {e}")
 
 def load_points(filename="puntos.json"):
     try:
@@ -52,12 +97,3 @@ def load_points(filename="puntos.json"):
             return json.loads(txt) if txt else {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
-
-def clear_alarm(device):
-    """Limpia alarmas reales (M2 + M17)."""
-    try:
-        device.ser.write(b'M2\n');  time.sleep(0.2)
-        device.ser.write(b'M17\n'); device.ser.flush()
-        print("✅ Alarma limpiada.")
-    except Exception as e:
-        print(f"⚠️ Error clear alarm: {e}")

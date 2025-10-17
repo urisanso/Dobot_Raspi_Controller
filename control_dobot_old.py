@@ -1,24 +1,16 @@
-#!/usr/bin/env python3
+# control_dobot.py
 import time, curses, serial.tools.list_ports
 from pydobot import Dobot
-from dobot_utils import (
-    home_fisico, home_logico, suck,
-    move_to_xyzr, move_joints,
-    save_points, load_points, clear_alarm
-)
+from dobot_utils import home, suck, move_to_xyzr, move_joints, save_points, load_points, go_home, clear_alarm
 
 STEP_CART = 5    # mm por paso
 STEP_JOINT = 3   # grados por paso
-
-# ==================== DETECCIÓN DE PUERTO ====================
 
 def detectar_puerto():
     for p in serial.tools.list_ports.comports():
         if "USB" in p.device or "ACM" in p.device:
             return p.device
     return None
-
-# ==================== MAIN LOOP CON CURSES ====================
 
 def main(stdscr):
     stdscr.nodelay(True)
@@ -35,8 +27,9 @@ def main(stdscr):
 
     puntos = load_points()
     pose = device.pose()
-    x, y, z, r = pose[:4]
-    j1, j2, j3, j4 = pose[4:8]
+    # pose: (x, y, z, r, j1, j2, j3, j4) en el Magician común
+    x, y, z, r = pose[0], pose[1], pose[2], pose[3]
+    j1, j2, j3, j4 = pose[4], pose[5], pose[6], pose[7]
 
     modo_joint = False
     action_msg = "Modo cartesiano"
@@ -48,15 +41,12 @@ def main(stdscr):
         if key == ord('q'):
             break
 
-        elif key == ord('t'):
+        elif key == ord('t'):  # <--- CAMBIO DE MODO con T (ya no M)
             modo_joint = not modo_joint
             action_msg = "→ Modo JOINT" if modo_joint else "→ Modo CARTESIANO"
 
-        elif key == ord('h'):  # HOME físico
-            home_fisico(device); action_msg = "→ HOME físico"
-
-        elif key == ord('j'):  # HOME lógico (P_HOME)
-            home_logico(device, puntos); action_msg = "→ HOME lógico"
+        elif key == ord('h'):
+            home(device); action_msg = "→ HOME"
 
         elif key == ord('g'):
             suck(device, True); action_msg = "→ Bomba ON"
@@ -99,7 +89,7 @@ def main(stdscr):
             if key == ord('u'): j3 += STEP_JOINT; moved = True
             if key == ord('o'): j3 -= STEP_JOINT; moved = True
             if key == ord('n'): j4 += STEP_JOINT; moved = True
-            if key == ord('m'): j4 -= STEP_JOINT; moved = True
+            if key == ord('m'): j4 -= STEP_JOINT; moved = True  # ahora M es solo J4-
 
             if moved:
                 move_joints(device, j1, j2, j3, j4)
@@ -124,7 +114,7 @@ def main(stdscr):
         stdscr.addstr(3, 0, f"X={x:.1f} Y={y:.1f} Z={z:.1f} R={r:.1f}")
         stdscr.addstr(4, 0, f"J1={j1:.1f} J2={j2:.1f} J3={j3:.1f} J4={j4:.1f}")
         stdscr.addstr(6, 0, action_msg)
-        stdscr.addstr(8, 0, "Q salir | T modo | G/B bomba | H home físico | J home lógico | P/L puntos | C clear")
+        stdscr.addstr(8, 0, "Q salir | T modo | G/B bomba | H home | P/L puntos | C clear")
         stdscr.refresh()
         time.sleep(0.08)
 

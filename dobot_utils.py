@@ -1,6 +1,8 @@
 # dobot_utils.py
 #!/usr/bin/env python3
 import time, json
+import os, csv
+from datetime import datetime
 from pydobot import enums
 
 # ==================== FUNCIONES DE MOVIMIENTO ====================
@@ -86,3 +88,49 @@ def load_points(filename="puntos.json"):
             return json.loads(txt) if txt else {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
+
+# =====================================================
+# NUEVAS FUNCIONES PARA REGISTRO Y REPRODUCCIÓN
+# =====================================================
+
+def detectar_puerto():
+    """Detecta automáticamente el puerto del Dobot conectado por USB."""
+    import serial.tools.list_ports
+    for p in serial.tools.list_ports.comports():
+        if "USB" in p.device or "ACM" in p.device:
+            return p.device
+    return None
+
+def crear_archivo_trayectoria(dir_salida="data/trayectorias"):
+    """Crea un nuevo archivo CSV en la carpeta indicada y devuelve su path."""
+    if not os.path.exists(dir_salida):
+        os.makedirs(dir_salida)
+    nombre = f"trayectoria_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    path = os.path.join(dir_salida, nombre)
+    with open(path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["timestamp", "J1", "J2", "J3", "J4"])
+    return path
+
+def append_trayectoria(path, j1, j2, j3, j4):
+    """Agrega un punto articular (J1–J4) con timestamp al archivo CSV."""
+    with open(path, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([time.time(), f"{j1:.3f}", f"{j2:.3f}", f"{j3:.3f}", f"{j4:.3f}"])
+
+def reproducir_trayectoria(device, path):
+    """Ejecuta la trayectoria grabada desde un CSV."""
+    if not os.path.exists(path):
+        print("⚠️ No hay archivo para reproducir.")
+        return
+    with open(path, "r") as f:
+        reader = csv.reader(f)
+        next(reader)  # salta encabezado
+        for row in reader:
+            j1, j2, j3, j4 = map(float, row[1:5])
+            device._set_ptp_cmd(
+                x=j1, y=j2, z=j3, r=j4,
+                mode=enums.PTPMode.MOVJ_ANGLE,
+                wait=True
+            )
+    print("✅ Reproducción completada.")

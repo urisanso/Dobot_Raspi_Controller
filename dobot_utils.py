@@ -1,15 +1,12 @@
 # dobot_utils.py
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 import time, json
 from pydobot import enums
 
 # ==================== FUNCIONES DE MOVIMIENTO ====================
 
 def home_fisico(device):
-    """
-    Realiza el homing físico real del Dobot.
-    (Simula el G28 pero con la API de pydobot)
-    """
+    """Ejecuta el homing físico real (equivalente a G28)."""
     try:
         print("🏠 Ejecutando HOME físico...")
         device._set_queued_cmd_clear()
@@ -23,9 +20,7 @@ def home_fisico(device):
 
 
 def home_logico(device, puntos):
-    """
-    Va al punto guardado 'P_HOME' si existe.
-    """
+    """Va al punto guardado 'P_HOME' si existe."""
     if "P_HOME" not in puntos:
         print("⚠️ No hay punto 'P_HOME' guardado.")
         return
@@ -35,19 +30,15 @@ def home_logico(device, puntos):
 
 
 def move_to_xyzr(device, x, y, z, r, wait=True):
-    """
-    Movimiento cartesiano a coordenadas (x, y, z, r).
-    """
+    """Movimiento cartesiano a coordenadas (x, y, z, r)."""
     try:
         device.move_to(x, y, z, r, wait=wait)
     except Exception as e:
         print(f"⚠️ Error moviendo XYZR: {e}")
 
 
-def move_joints(device, j1, j2, j3, j4, wait=True):
-    """
-    Movimiento por juntas (modo 4 = MOVJ_ANGLE)
-    """
+def move_joints(device, j1, j2, j3, j4, wait=False):
+    """Movimiento por juntas (MOVJ_ANGLE)."""
     try:
         device._set_ptp_cmd(
             x=j1, y=j2, z=j3, r=j4,
@@ -59,9 +50,7 @@ def move_joints(device, j1, j2, j3, j4, wait=True):
 
 
 def suck(device, state: bool):
-    """
-    Activa o desactiva la bomba de vacío.
-    """
+    """Activa o desactiva la bomba de vacío."""
     try:
         device._set_end_effector_suction_cup(enable=state, on=True)
         print(f"✅ Bomba {'ON' if state else 'OFF'}.")
@@ -70,15 +59,14 @@ def suck(device, state: bool):
 
 
 def clear_alarm(device):
-    """
-    Limpia alarmas internas y cola de comandos.
-    """
+    """Limpia alarmas internas y cola de comandos."""
     try:
         device._set_queued_cmd_clear()
         device._set_queued_cmd_start_exec()
         print("✅ Alarmas y cola limpiadas.")
     except Exception as e:
         print(f"⚠️ Error clear alarm: {e}")
+
 
 # ==================== FUNCIONES DE PERSISTENCIA ====================
 
@@ -89,6 +77,7 @@ def save_points(puntos, filename="puntos.json"):
         print("💾 Puntos guardados.")
     except Exception as e:
         print(f"⚠️ Error guardando puntos: {e}")
+
 
 def load_points(filename="puntos.json"):
     try:

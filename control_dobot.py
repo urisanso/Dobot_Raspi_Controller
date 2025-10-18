@@ -9,6 +9,7 @@ from dobot_utils import (
 
 STEP_CART = 5    # mm por paso
 STEP_JOINT = 3   # grados por paso
+REFRESH_RATE = 0.1  # segundos entre lecturas de posición
 
 # ==================== DETECCIÓN DE PUERTO ====================
 
@@ -18,7 +19,7 @@ def detectar_puerto():
             return p.device
     return None
 
-# ==================== MAIN LOOP CON CURSES ====================
+# ==================== MAIN LOOP ====================
 
 def main(stdscr):
     stdscr.nodelay(True)
@@ -34,28 +35,32 @@ def main(stdscr):
     stdscr.addstr(2, 0, f"✅ Conectado a {port}")
 
     puntos = load_points()
-    pose = device.pose()
-    x, y, z, r = pose[:4]
-    j1, j2, j3, j4 = pose[4:8]
-
-    modo_joint = False
-    action_msg = "Modo cartesiano"
+    last_update = 0
+    action_msg = "Listo."
 
     while True:
+        # Leer posición real periódicamente
+        now = time.time()
+        if now - last_update > REFRESH_RATE:
+            pose = device.pose()
+            x, y, z, r = pose[:4]
+            j1, j2, j3, j4 = pose[4:8]
+            last_update = now
+
         key = stdscr.getch()
+        if key == -1:
+            time.sleep(0.02)
+            continue
+
         moved = False
 
         if key == ord('q'):
             break
 
-        elif key == ord('t'):
-            modo_joint = not modo_joint
-            action_msg = "→ Modo JOINT" if modo_joint else "→ Modo CARTESIANO"
-
-        elif key == ord('h'):  # HOME físico
+        elif key == ord('h'):
             home_fisico(device); action_msg = "→ HOME físico"
 
-        elif key == ord('j'):  # HOME lógico (P_HOME)
+        elif key == ord('j'):
             home_logico(device, puntos); action_msg = "→ HOME lógico"
 
         elif key == ord('g'):
@@ -75,43 +80,31 @@ def main(stdscr):
         elif key == ord('c'):
             clear_alarm(device); action_msg = "→ Alarma limpiada"
 
-        # ===== CARTESIANO =====
-        if not modo_joint:
-            if key == ord('w'): x += STEP_CART; moved = True
-            if key == ord('s'): x -= STEP_CART; moved = True
-            if key == ord('a'): y += STEP_CART; moved = True
-            if key == ord('d'): y -= STEP_CART; moved = True
-            if key == ord('r'): z += STEP_CART; moved = True
-            if key == ord('f'): z -= STEP_CART; moved = True
-            if key == ord('z'): r += STEP_CART; moved = True
-            if key == ord('x'): r -= STEP_CART; moved = True
+        # === Movimiento cartesiano continuo ===
+        elif key == ord('w'): move_to_xyzr(device, x + STEP_CART, y, z, r); action_msg = "→ +X"
+        elif key == ord('s'): move_to_xyzr(device, x - STEP_CART, y, z, r); action_msg = "→ -X"
+        elif key == ord('a'): move_to_xyzr(device, x, y + STEP_CART, z, r); action_msg = "→ +Y"
+        elif key == ord('d'): move_to_xyzr(device, x, y - STEP_CART, z, r); action_msg = "→ -Y"
+        elif key == ord('r'): move_to_xyzr(device, x, y, z + STEP_CART, r); action_msg = "→ +Z"
+        elif key == ord('f'): move_to_xyzr(device, x, y, z - STEP_CART, r); action_msg = "→ -Z"
+        elif key == ord('z'): move_to_xyzr(device, x, y, z, r + STEP_CART); action_msg = "→ +R"
+        elif key == ord('x'): move_to_xyzr(device, x, y, z, r - STEP_CART); action_msg = "→ -R"
 
-            if moved:
-                move_to_xyzr(device, x, y, z, r, wait=False)
-                action_msg = f"→ XYZR ({x:.1f},{y:.1f},{z:.1f},{r:.1f})"
+        # === Movimiento articular continuo ===
+        elif key == ord('i'): move_joints(device, j1 + STEP_JOINT, j2, j3, j4); action_msg = "→ +J1"
+        elif key == ord('k'): move_joints(device, j1 - STEP_JOINT, j2, j3, j4); action_msg = "→ -J1"
+        elif key == ord('j'): move_joints(device, j1, j2 + STEP_JOINT, j3, j4); action_msg = "→ +J2"
+        elif key == ord('l'): move_joints(device, j1, j2 - STEP_JOINT, j3, j4); action_msg = "→ -J2"
+        elif key == ord('u'): move_joints(device, j1, j2, j3 + STEP_JOINT, j4); action_msg = "→ +J3"
+        elif key == ord('o'): move_joints(device, j1, j2, j3 - STEP_JOINT, j4); action_msg = "→ -J3"
+        elif key == ord('n'): move_joints(device, j1, j2, j3, j4 + STEP_JOINT); action_msg = "→ +J4"
+        elif key == ord('m'): move_joints(device, j1, j2, j3, j4 - STEP_JOINT); action_msg = "→ -J4"
 
-        # ===== JOINT =====
-        else:
-            if key == ord('i'): j1 += STEP_JOINT; moved = True
-            if key == ord('k'): j1 -= STEP_JOINT; moved = True
-            if key == ord('j'): j2 += STEP_JOINT; moved = True
-            if key == ord('l'): j2 -= STEP_JOINT; moved = True
-            if key == ord('u'): j3 += STEP_JOINT; moved = True
-            if key == ord('o'): j3 -= STEP_JOINT; moved = True
-            if key == ord('n'): j4 += STEP_JOINT; moved = True
-            if key == ord('m'): j4 -= STEP_JOINT; moved = True
-
-            if moved:
-                move_joints(device, j1, j2, j3, j4)
-                action_msg = f"→ Joints ({j1:.1f},{j2:.1f},{j3:.1f},{j4:.1f})"
-
-        # Ir a puntos guardados
-        if key in range(ord('1'), ord('9') + 1):
+        elif key in range(ord('1'), ord('9') + 1):
             nombre = f"P{chr(key)}"
             if nombre in puntos:
                 px, py, pz, pr = puntos[nombre]
                 move_to_xyzr(device, px, py, pz, pr, wait=True)
-                x, y, z, r = px, py, pz, pr
                 action_msg = f"→ Movido a {nombre}"
             else:
                 action_msg = f"⚠️ {nombre} no existe"
@@ -120,13 +113,13 @@ def main(stdscr):
         stdscr.clear()
         stdscr.addstr(0, 0, "=== DOBOT MAGICIAN CONTROL ===")
         stdscr.addstr(1, 0, f"Puerto: {port}")
-        stdscr.addstr(2, 0, "Modo: " + ("JOINT" if modo_joint else "CARTESIANO"))
-        stdscr.addstr(3, 0, f"X={x:.1f} Y={y:.1f} Z={z:.1f} R={r:.1f}")
-        stdscr.addstr(4, 0, f"J1={j1:.1f} J2={j2:.1f} J3={j3:.1f} J4={j4:.1f}")
-        stdscr.addstr(6, 0, action_msg)
-        stdscr.addstr(8, 0, "Q salir | T modo | G/B bomba | H home físico | J home lógico | P/L puntos | C clear")
+        stdscr.addstr(2, 0, f"XYZR: X={x:.1f}  Y={y:.1f}  Z={z:.1f}  R={r:.1f}")
+        stdscr.addstr(3, 0, f"Joints: J1={j1:.1f}  J2={j2:.1f}  J3={j3:.1f}  J4={j4:.1f}")
+        stdscr.addstr(5, 0, action_msg)
+        stdscr.addstr(7, 0, "Controles: W/S X | A/D Y | R/F Z | Z/X R | I/K J1 | J/L J2 | U/O J3 | N/M J4")
+        stdscr.addstr(9, 0, "H home físico | J home lógico | G/B bomba | P/L puntos | C clear | Q salir")
         stdscr.refresh()
-        time.sleep(0.08)
+        time.sleep(0.05)
 
     device.close()
     stdscr.clear()

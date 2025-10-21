@@ -51,13 +51,21 @@ def move_joints(device, j1, j2, j3, j4, wait=False):
         print(f"⚠️ Error moviendo joints: {e}")
 
 
+# -----------------------------------------------------
+# CONTROL DE BOMBA (vacío / soplado)
+# -----------------------------------------------------
+INVERTIR_BOMBA = True  # ← cambiá a False si querés volver al sentido original
+
 def suck(device, state: bool):
-    """Activa o desactiva la bomba de vacío."""
+    """Activa o desactiva la bomba de vacío (con opción de invertir polaridad)."""
     try:
-        device._set_end_effector_suction_cup(enable=state, on=True)
-        print(f"✅ Bomba {'ON' if state else 'OFF'}.")
+        # Si INVERTIR_BOMBA=True, el estado se invierte lógicamente
+        state_real = not state if INVERTIR_BOMBA else state
+        device._set_end_effector_suction_cup(enable=state_real, on=True)
+        print(f"✅ Bomba {'ON (vacío)' if state else 'OFF (liberando)'}")
     except Exception as e:
-        print(f"⚠️ Error bomba: {e}")
+        print(f"⚠️ Error control bomba: {e}")
+
 
 
 def clear_alarm(device):
@@ -112,22 +120,36 @@ def crear_archivo_trayectoria(dir_salida="data/trayectorias"):
         writer.writerow(["timestamp", "J1", "J2", "J3", "J4"])
     return path
 
-def append_trayectoria(path, j1, j2, j3, j4):
-    """Agrega un punto articular (J1–J4) con timestamp al archivo CSV."""
+def append_trayectoria(path, j1, j2, j3, j4, punto=None, bomba=0):
+    """Agrega un punto articular (J1–J4) con timestamp, nombre y estado de bomba."""
+    import csv, time
     with open(path, "a", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([time.time(), f"{j1:.3f}", f"{j2:.3f}", f"{j3:.3f}", f"{j4:.3f}"])
+        writer.writerow([
+            time.time(),
+            f"{j1:.3f}", f"{j2:.3f}", f"{j3:.3f}", f"{j4:.3f}",
+            punto or "", bomba
+        ])
 
 def reproducir_trayectoria(device, path):
-    """Ejecuta la trayectoria grabada desde un CSV."""
+    """Ejecuta la trayectoria grabada desde un CSV, incluyendo la bomba."""
+    import csv, os, time
+    from pydobot import enums
     if not os.path.exists(path):
         print("⚠️ No hay archivo para reproducir.")
         return
     with open(path, "r") as f:
         reader = csv.reader(f)
-        next(reader)  # salta encabezado
+        next(reader)  # encabezado
         for row in reader:
             j1, j2, j3, j4 = map(float, row[1:5])
+            bomba = int(row[6]) if len(row) > 6 else 0
+            # Actualizar bomba si es necesario
+            if bomba:
+                device.suck(True)
+            else:
+                device.suck(False)
+            # Mover a posición
             device._set_ptp_cmd(
                 x=j1, y=j2, z=j3, r=j4,
                 mode=enums.PTPMode.MOVJ_ANGLE,

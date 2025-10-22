@@ -1,0 +1,4 @@
+keyboard==0.13.5
+numpy==1.24.2
+pydobot @ git+https://github.com/luismesas/pydobot.git@2ff8d7e1318ac9b7bc32bd33ff327d343f44927c
+pyserial==3.4

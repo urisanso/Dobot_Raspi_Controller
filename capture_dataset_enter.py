@@ -7,10 +7,8 @@ from time import sleep
 # =======================
 # Argumentos
 # =======================
-parser = argparse.ArgumentParser(description="Captura de dataset con cámara Dobot/Raspi")
+parser = argparse.ArgumentParser(description="Captura manual con ENTER")
 parser.add_argument("--label", required=True, help="Nombre del objeto o clase a fotografiar")
-parser.add_argument("--n", type=int, required=True, help="Cantidad de imágenes a capturar")
-parser.add_argument("--interval", type=float, default=0.5, help="Intervalo entre fotos (s)")
 parser.add_argument("--cam", type=int, default=0, help="Índice de cámara (0 por defecto)")
 args = parser.parse_args()
 
@@ -24,25 +22,31 @@ cap = cv2.VideoCapture(args.cam)
 if not cap.isOpened():
     raise RuntimeError(f"⚠️ No se pudo abrir la cámara en índice {args.cam}")
 
-print(f"📸 Capturando {args.n} imágenes para '{args.label}'...")
+print(f"\n📸 Modo captura manual (ENTER) iniciado para '{args.label}'.")
+print("➡️  Presioná [ENTER] para sacar una foto.")
+print("➡️  Escribí 'q' y ENTER para salir.\n")
+
 count = 0
 
 # =======================
 # Bucle de captura
 # =======================
-while count < args.n:
+while True:
     ret, frame = cap.read()
     if not ret:
         print("⚠️ Error al leer frame")
         break
 
-    # Guardar imagen
+    user_input = input("Presioná ENTER para capturar, o 'q' para salir: ").strip().lower()
+    if user_input == "q":
+        print("\n👋 Finalizando captura manual.")
+        break
+
     filename = os.path.join(output_dir, f"{args.label}_{count:03d}.jpg")
     cv2.imwrite(filename, frame)
-    print(f"✅ Guardada: {filename}")
+    print(f"✅ Foto guardada: {filename}")
     count += 1
-
-    sleep(args.interval)
+    sleep(0.2)
 
 cap.release()
-print("✅ Captura completada.")
+print(f"✅ Total de imágenes capturadas: {count}")

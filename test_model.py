@@ -6,8 +6,8 @@ from roboflow import Roboflow
 
 # === CONFIGURACIÓN ===
 rf = Roboflow(api_key="6CpctoE5C7mQOrwSaDWt")
-project = rf.workspace("notengoidea").project("Arcoiris")
-model = project.version(2).model
+project = rf.workspace("notengoidea").project("arcoiris-9o6ty")
+model = project.version(2, local="http://localhost:9001/").model
 
 SAVE_DIR = Path("predicciones")
 SAVE_DIR.mkdir(exist_ok=True)

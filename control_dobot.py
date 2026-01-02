@@ -60,13 +60,13 @@ def main(stdscr):
         elif key == ord('h'):
             home_fisico(device); action_msg = "→ HOME físico"
 
-        elif key == ord('j'):
+        elif key == ord('g'):
             home_logico(device, puntos); action_msg = "→ HOME lógico"
 
-        elif key == ord('g'):
+        elif key == ord('t'):
             suck(device, True); action_msg = "→ Bomba ON"
 
-        elif key == ord('b'):
+        elif key == ord('y'):
             suck(device, False); action_msg = "→ Bomba OFF"
 
         elif key == ord('p'):
@@ -74,7 +74,7 @@ def main(stdscr):
             puntos[nombre] = [x, y, z, r]
             save_points(puntos); action_msg = f"💾 {nombre} guardado"
 
-        elif key == ord('l'):
+        elif key == ord('v'):
             puntos = load_points(); action_msg = "→ Puntos cargados"
 
         elif key == ord('c'):
@@ -117,7 +117,7 @@ def main(stdscr):
         stdscr.addstr(3, 0, f"Joints: J1={j1:.1f}  J2={j2:.1f}  J3={j3:.1f}  J4={j4:.1f}")
         stdscr.addstr(5, 0, action_msg)
         stdscr.addstr(7, 0, "Controles: W/S X | A/D Y | R/F Z | Z/X R | I/K J1 | J/L J2 | U/O J3 | N/M J4")
-        stdscr.addstr(9, 0, "H home físico | J home lógico | G/B bomba | P/L puntos | C clear | Q salir")
+        stdscr.addstr(9, 0, "H home físico | G home lógico | T/Y bomba | P/V puntos | C clear | Q salir")
         stdscr.refresh()
         time.sleep(0.05)
 

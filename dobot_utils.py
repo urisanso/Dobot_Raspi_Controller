@@ -61,10 +61,18 @@ def suck(device, state: bool):
     try:
         # Si INVERTIR_BOMBA=True, el estado se invierte lógicamente
         state_real = not state if INVERTIR_BOMBA else state
-        device._set_end_effector_suction_cup(enable=state_real, on=True)
+        device._set_end_effector_suction_cup(enable=state_real) #, on=True
         print(f"✅ Bomba {'ON (vacío)' if state else 'OFF (liberando)'}")
     except Exception as e:
         print(f"⚠️ Error control bomba: {e}")
+
+def gripper(device, state: bool):
+    """
+    Alias de suck() para compatibilidad.
+    True  -> cerrar (vacío)
+    False -> abrir (aire)
+    """
+    suck(device, state)
 
 
 

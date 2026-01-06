@@ -21,6 +21,9 @@ def detect_objects(
     if not cap.isOpened():
         raise RuntimeError("No se pudo abrir la cámara")
 
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
     ret, frame = cap.read()
     cap.release()
     if not ret:

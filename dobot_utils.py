@@ -77,13 +77,27 @@ def gripper(device, state: bool):
 
 
 def clear_alarm(device):
-    """Limpia alarmas internas y cola de comandos."""
+    """
+    Limpia errores funcionales.
+    NOTA: el LED rojo puede permanecer encendido aunque el robot esté operativo.
+    """
     try:
+        device.ser.write(b'M2\n')
+        device.ser.flush()
+        time.sleep(0.2)
+
+        device.ser.write(b'M17\n')
+        device.ser.flush()
+        time.sleep(0.2)
+
         device._set_queued_cmd_clear()
         device._set_queued_cmd_start_exec()
-        print("✅ Alarmas y cola limpiadas.")
+
+        print("⚠️ Warning puede persistir (LED rojo), robot operativo.")
+
     except Exception as e:
         print(f"⚠️ Error clear alarm: {e}")
+
 
 
 # ==================== FUNCIONES DE PERSISTENCIA ====================

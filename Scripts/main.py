@@ -2,15 +2,18 @@ import numpy as np
 from pathlib import Path
 
 from lib.roboflow_detector import detect_objects
-from lib.dobot_utils import move_to_xyzr
 from lib.utils import load_homography, pixel_to_robot, get_bbox_centers
+from lib.dobot_utils import (
+    detectar_puerto, home_fisico, home_logico, 
+    suck, move_to_xyzr, move_joints
+)
 
 # === CONFIG ===
 API_KEY = "6CpctoE5C7mQOrwSaDWt"
 PROJECT = "arcoiris-9o6ty"
 VERSION = 2
 
-Z_PICK = 0
+Z_PICK = 50
 CONFIDENCE_MIN = 0.5
 IGNORE_CLASSES = ["vacio"]
 
@@ -30,6 +33,8 @@ def main(device):
         vision_pose["r"]
     )
 
+    suck(device, False)
+
     # 3️⃣ Detectar objetos
     detections, _ = detect_objects(
         api_key=API_KEY,
@@ -41,8 +46,10 @@ def main(device):
     centers = get_bbox_centers(
         detections,
         min_conf=CONFIDENCE_MIN,
-        ignore_classes=IGNORE_CLASSES
+        #ignore_classes=IGNORE_CLASSES
     )
+
+    print(centers)
 
     if not centers:
         print("❌ No hay objetos válidos")
@@ -58,18 +65,24 @@ def main(device):
     x, y = pixel_to_robot(u, v, H)
     print(f"🤖 Destino robot: x={x:.2f}, y={y:.2f}")
 
+    Xr_corr = x + 0
+    Yr_corr = y - 20
+
     # 6️⃣ Mover al objeto
     move_to_xyzr(
         device,
-        x,
-        y,
+        Xr_corr,
+        Yr_corr,
         Z_PICK,
         vision_pose["r"]
     )
+
+    suck(device, True)
 
 
 if __name__ == "__main__":
     from pydobot import Dobot
 
-    device = Dobot(port="/dev/ttyUSB0")  # ajustá si hace falta
+    port = detectar_puerto()
+    device = Dobot(port=port, verbose=False)
     main(device)

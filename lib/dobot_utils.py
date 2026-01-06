@@ -5,6 +5,14 @@ import os, csv
 from datetime import datetime
 from pydobot import enums
 
+# ==================== DETECCIÓN DE PUERTO ====================
+
+def detectar_puerto():
+    for p in serial.tools.list_ports.comports():
+        if "USB" in p.device or "ACM" in p.device:
+            return p.device
+    return None
+    
 # ==================== FUNCIONES DE MOVIMIENTO ====================
 
 def home_fisico(device):

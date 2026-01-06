@@ -10,10 +10,16 @@ def load_homography(json_path):
     with open(json_path, "r") as f:
         data = json.load(f)
 
-    H = np.array(data["pixel_to_robot"]["H"], dtype=float)
+    H_1280  = np.array(data["pixel_to_robot"]["H"], dtype=float)
+    S_inv = np.array([
+        [2.0, 0.0, 0.0],
+        [0.0, 2.0, 0.0],
+        [0.0, 0.0, 1.0]
+    ])
+    H_640 = H_1280 @ S_inv
     vision_pose = data["vision_pose"]
 
-    return H, vision_pose
+    return H_1280, vision_pose
 
 def pixel_to_robot(u, v, H):
     """

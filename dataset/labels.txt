@@ -1,0 +1,16 @@
+Engranaje_36
+Engranaje_12
+Polea_40
+BlockPlate_2x2
+BlockPlate_1x3
+Buje
+ConvA_1_5x1
+ConvB_1_5x1
+ConvB_2_5x1
+ConvB_1_5x2
+ConvB_1x2
+ConvB_2x1
+ConvB_2x2
+ConvB_Doble
+Conv_Esq_Grande
+Conv_Esq_Chica

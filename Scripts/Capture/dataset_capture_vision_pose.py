@@ -1,3 +1,4 @@
+# python -m Scripts.Capture.dataset_capture_vision_pose
 import json
 import time
 from pathlib import Path

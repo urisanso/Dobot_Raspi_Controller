@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import time, curses, serial.tools.list_ports
 from pydobot import Dobot
-from dobot_utils import (
+from lib.dobot_utils import (
     home_fisico, home_logico, suck,
     move_to_xyzr, move_joints,
     save_points, load_points, clear_alarm

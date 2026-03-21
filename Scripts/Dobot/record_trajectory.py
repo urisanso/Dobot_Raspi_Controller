@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import time, curses
-from dobot_utils import (
+from lib.dobot_utils import (
     detectar_puerto, crear_archivo_trayectoria,
     append_trayectoria, reproducir_trayectoria, suck
 )

@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from pathlib import Path
 
 from lib.roboflow_detector import detect_objects
@@ -10,11 +11,11 @@ from lib.dobot_utils import (
 
 # === CONFIG ===
 API_KEY = "6CpctoE5C7mQOrwSaDWt"
-PROJECT = "arcoiris-9o6ty"
+PROJECT = "model_ping_reduced"
 VERSION = 2
 
-Z_PICK = 50
-CONFIDENCE_MIN = 0.5
+Z_PICK = 42
+CONFIDENCE_MIN = 0.8
 IGNORE_CLASSES = ["vacio"]
 
 H_JSON = Path("JSON/Matriz_H.json")
@@ -53,6 +54,7 @@ def main(device):
 
     if not centers:
         print("❌ No hay objetos válidos")
+        suck(device, True)
         return
 
     # 4️⃣ Tomar un objeto (por ahora el primero)
@@ -78,6 +80,19 @@ def main(device):
     )
 
     suck(device, True)
+
+    time.sleep(1)
+
+    # 2️⃣ Ir a posición de búsqueda
+    move_to_xyzr(
+        device,
+        vision_pose["x"],
+        vision_pose["y"],
+        vision_pose["z"],
+        vision_pose["r"]
+    )
+
+    suck(device, False)
 
 
 if __name__ == "__main__":

@@ -3,8 +3,8 @@ from roboflow import Roboflow
 
 # === Configuración ===
 rf = Roboflow(api_key="6CpctoE5C7mQOrwSaDWt")
-project = rf.workspace("notengoidea").project("Arcoiris")
-model = project.version(1).model
+project = rf.workspace("RoboticsVisionLab").project("model_ping_reduced")
+model = project.version(2).model
 
 # === Inferencia ===
 result = model.predict("foto_prueba.jpg", confidence=40, overlap=30)

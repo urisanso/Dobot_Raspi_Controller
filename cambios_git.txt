@@ -1,3 +1,11 @@
+# Cambios git:
 git add .
 git commit -m "descripcion del cambio"
 git push
+
+# inicializar entorno virtual:
+source venv/bin/activate
+
+# Corerr script de python:
+python -m Scripts.main
+

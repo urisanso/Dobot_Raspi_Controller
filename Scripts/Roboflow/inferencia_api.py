@@ -5,11 +5,11 @@ from datetime import datetime
 
 # === CONFIGURACIÓN ===
 API_KEY = "6CpctoE5C7mQOrwSaDWt"#"rf_CdGfFS3yiJdkwIVoKGy9ayUlXYI2"
-WORKSPACE = "notengoidea"
-PROJECT = "arcoiris-9o6ty"
+WORKSPACE = "RoboticsVisionLab"
+PROJECT = "model_ping_reduced"
 VERSION = 2  # número de versión
 CAM_INDEX = 0
-CONFIDENCE = 40
+CONFIDENCE = 85
 
 # === CAPTURA ===
 cap = cv2.VideoCapture(CAM_INDEX)

@@ -64,6 +64,17 @@ def move_joints(device, j1, j2, j3, j4, wait=False):
     except Exception as e:
         print(f"⚠️ Error moviendo joints: {e}")
 
+def move_to_xyzr_joint(device, x, y, z, r, wait=True):
+    """Movimiento a XYZR con trayectoria por juntas (MOVJ_XYZ)."""
+    try:
+        device._set_ptp_cmd(
+            x=x, y=y, z=z, r=r,
+            mode=enums.PTPMode.MOVJ_XYZ,
+            wait=wait
+        )
+    except Exception as e:
+        print(f"⚠️ Error moviendo XYZR con MOVJ_XYZ: {e}")
+
 
 # -----------------------------------------------------
 # CONTROL DE BOMBA (vacío / soplado)

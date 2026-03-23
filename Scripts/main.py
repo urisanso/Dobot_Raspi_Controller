@@ -145,16 +145,28 @@ def main(device):
 
     time.sleep(1)
 
-    # Volver a posición de búsqueda
-    move_to_xyzr(
-        device,
-        vision_pose["x"],
-        vision_pose["y"],
-        vision_pose["z"],
-        vision_pose["r"]
-    )
+    places = load_places("JSON/places.json")
+    place = places.get(clase, places["default"])
+    print(f"📦 Place para {clase}: {place}")
 
+    Z_SAFE = 80
+
+    # subir antes de mover
+    move_to_xyzr(device, Xr_corr, Yr_corr, Z_SAFE, vision_pose["r"])
+
+    # ir a zona place arriba
+    move_to_xyzr(device, place["x"], place["y"], Z_SAFE, place["r"])
+
+    # bajar
+    move_to_xyzr(device, place["x"], place["y"], place["z"], place["r"])
+
+    # soltar
     suck(device, False)
+
+    time.sleep(0.5)
+
+    # subir
+    move_to_xyzr(device, place["x"], place["y"], Z_SAFE, place["r"])
 
 
 if __name__ == "__main__":

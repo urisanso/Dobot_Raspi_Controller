@@ -6,7 +6,7 @@ from lib.roboflow_detector import detect_objects
 from lib.utils import load_homography, pixel_to_robot, get_bbox_centers
 from lib.dobot_utils import (
     detectar_puerto, home_fisico, home_logico,
-    suck, move_to_xyzr, move_joints
+    suck, move_to_xyzr, move_joints, load_places
 )
 
 # === CONFIG ===
@@ -14,7 +14,7 @@ API_KEY = "6CpctoE5C7mQOrwSaDWt"
 PROJECT = "model_ping_reduced"
 VERSION = 2
 
-Z_PICK = 42
+Z_PICK = 43
 CONFIDENCE_MIN = 0.8
 IGNORE_CLASSES = ["vacio"]
 
@@ -129,7 +129,7 @@ def main(device):
     x, y = pixel_to_robot(u, v, H)
     print(f"🤖 Destino robot: x={x:.2f}, y={y:.2f}")
 
-    Xr_corr = x + 0
+    Xr_corr = x - 15 
     Yr_corr = y - 20
 
     # 6️⃣ Mover al objeto

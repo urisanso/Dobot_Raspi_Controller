@@ -12,6 +12,12 @@ def detectar_puerto():
         if "USB" in p.device or "ACM" in p.device:
             return p.device
     return None
+
+# ==================== ARCHIVOS JSON ====================
+
+def load_places(path):
+    with open(path, "r") as f:
+        return json.load(f)
     
 # ==================== FUNCIONES DE MOVIMIENTO ====================
 

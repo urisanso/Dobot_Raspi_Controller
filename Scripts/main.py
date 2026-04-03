@@ -109,135 +109,81 @@ def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=Non
 
 
 def main(device):
-
-    # 1️⃣ Cargar matriz H y pose de visión
+    # 1️⃣ Cargar matriz H y pose de visión (Fuera del loop para no leer disco cada vez)
     H, vision_pose = load_homography(H_JSON)
-
-    # 2️⃣ Ir a posición de búsqueda
-    move_to_xyzr_joint(
-        device,
-        vision_pose["x"],
-        vision_pose["y"],
-        vision_pose["z"],
-        vision_pose["r"]
-    )
-
-    suck(device, False)
-
-    # 3️⃣ Detectar objetos
-    detections, _ = detect_objects(
-        api_key=API_KEY,
-        project=PROJECT,
-        version=VERSION,
-        save_debug=True
-    )
-
-    # Mostrar todas las detecciones válidas
-    detecciones_validas = imprimir_detecciones(
-        detections,
-        min_conf=CONFIDENCE_MIN,
-        ignore_classes=IGNORE_CLASSES
-    )
-
-    if not detecciones_validas:
-        print("❌ No hay objetos válidos")
-        suck(device, True)
-        return
-
-
-    # # Elegir la de mayor porcentaje
-    # target = elegir_mejor_deteccion(
-    #     detections,
-    #     min_conf=CONFIDENCE_MIN,
-    #     ignore_classes=IGNORE_CLASSES
-    # )
-
-    # clase = target["class"]
-    # conf = target["confidence"]
-    # u, v = target["x"], target["y"]
-
-    # print("\n=== OBJETIVO SELECCIONADO ===")
-    # print(f"Clase: {clase}")
-    # print(f"Confianza: {conf*100:.2f}%")
-    # print(f"Centro BB: u={u}, v={v}")
-
-    # # 5️⃣ Pixel → Robot
-    # x, y = pixel_to_robot(u, v, H)
-    # print(f"🤖 Destino robot: x={x:.2f}, y={y:.2f}")
-
-
-    target = elegir_deteccion_mas_derecha(
-        detections,
-        H,
-        min_conf=CONFIDENCE_MIN,
-        ignore_classes=IGNORE_CLASSES
-    )
-
-    if target is None:
-        print("❌ No hay objetos válidos")
-        suck(device, True)
-        return
-
-    clase = target["class"]
-    conf = target["confidence"]
-    u, v = target["x"], target["y"]
-    x, y = target["x_robot"], target["y_robot"]
-
-    print("\n=== OBJETIVO SELECCIONADO ===")
-    print(f"Clase: {clase}")
-    print(f"Confianza: {conf*100:.2f}%")
-    print(f"Centro BB: u={u}, v={v}")
-    print(f"Más a la derecha => y_robot={y:.2f}")
-    print(f"🤖 Destino robot: x={x:.2f}, y={y:.2f}")
-
-    Xr_corr = x - 15 
-    Yr_corr = y - 20
-
-    # 6️⃣ Mover al objeto
-    move_to_xyzr(
-        device,
-        Xr_corr,
-        Yr_corr,
-        Z_PICK,
-        vision_pose["r"]
-    )
-
-    suck(device, True)
-
-    time.sleep(1)
-
     places = load_places("JSON/places.json")
-    place = places.get(clase, places["default"])
-    print(f"📦 Place para {clase}: {place}")
-
     Z_SAFE = 80
 
-    # subir antes de mover
-    move_to_xyzr(device, Xr_corr, Yr_corr, Z_SAFE, vision_pose["r"])
+    print("🚀 Iniciando Loop Infinito de Clasificación...")
 
-    # ir a zona place arriba
-    move_to_xyzr_joint(device, place["x"], place["y"], Z_SAFE, place["r"])
+    while True:
+        # 2️⃣ Asegurar posición de búsqueda y ventosa apagada
+        move_to_xyzr_joint(
+            device,
+            vision_pose["x"],
+            vision_pose["y"],
+            vision_pose["z"],
+            vision_pose["r"]
+        )
+        suck(device, False)
 
-    # bajar
-    move_to_xyzr(device, place["x"], place["y"], place["z"], place["r"])
+        # 3️⃣ Detectar objetos
+        print("\n📸 Capturando imagen y detectando...")
+        detections, _ = detect_objects(
+            api_key=API_KEY,
+            project=PROJECT,
+            version=VERSION,
+            save_debug=True
+        )
 
-    # soltar
-    suck(device, False)
+        # 4️⃣ Filtrar y seleccionar
+        target = elegir_deteccion_mas_derecha(
+            detections,
+            H,
+            min_conf=CONFIDENCE_MIN,
+            ignore_classes=IGNORE_CLASSES
+        )
 
-    time.sleep(0.5)
+        # === LÓGICA DE ESPERA SI NO HAY NADA ===
+        if target is None:
+            print("💤 No hay objetos válidos. Esperando 5 segundos para reintentar...")
+            time.sleep(5)
+            continue  # Vuelve al inicio del while para sacar otra foto
 
-    # subir
-    move_to_xyzr(device, place["x"], place["y"], Z_SAFE, place["r"])
+        # === SI LLEGAMOS ACÁ, HAY UN TARGET VÁLIDO ===
+        clase = target["class"]
+        conf = target["confidence"]
+        u, v = target["x"], target["y"]
+        x, y = target["x_robot"], target["y_robot"]
 
-    # 2️⃣ Ir a posición de búsqueda
-    move_to_xyzr_joint(
-        device,
-        vision_pose["x"],
-        vision_pose["y"],
-        vision_pose["z"],
-        vision_pose["r"]
-    )
+        print(f"✅ OBJETIVO DETECTADO: {clase} ({conf*100:.1f}%)")
+        
+        # Aplicamos tus correcciones de calibración
+        Xr_corr = x - 0 
+        Yr_corr = y - 20
 
+        # 6️⃣ EJECUCIÓN DE PICK (Mover al objeto)
+        move_to_xyzr(device, Xr_corr, Yr_corr, Z_PICK, vision_pose["r"])
+        suck(device, True)
+        time.sleep(1)
+
+        # 7️⃣ EJECUCIÓN DE PLACE
+        place = places.get(clase, places["default"])
+        print(f"📦 Clasificando en: {clase}")
+
+        # Trayectoria de seguridad: Subir -> Ir a zona -> Bajar -> Soltar
+        move_to_xyzr(device, Xr_corr, Yr_corr, Z_SAFE, vision_pose["r"])
+        move_to_xyzr_joint(device, place["x"], place["y"], Z_SAFE, place["r"])
+        move_to_xyzr(device, place["x"], place["y"], place["z"], place["r"])
+        
+        suck(device, False)
+        time.sleep(0.5)
+        
+        # Subir de nuevo para no chocar nada al volver
+        move_to_xyzr(device, place["x"], place["y"], Z_SAFE, place["r"])
+        
+        print("🔄 Ciclo completado. Volviendo a posición de visión.")
+        # El loop vuelve a empezar automáticamente
 
 if __name__ == "__main__":
     from pydobot import Dobot

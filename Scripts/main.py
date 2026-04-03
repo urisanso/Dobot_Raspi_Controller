@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import RPi.GPIO as GPIO
 from pathlib import Path
 
 from lib.roboflow_detector import detect_objects
@@ -20,6 +21,10 @@ IGNORE_CLASSES = ["vacio"]
 
 H_JSON = Path("JSON/Matriz_H.json")
 
+# --- CONFIG GPIO ---
+PIN_ENTRADA_ESP = 26 
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN_ENTRADA_ESP, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) 
 
 def imprimir_detecciones(detections, min_conf=0.0, ignore_classes=None):
     """Muestra por pantalla todas las detecciones."""
@@ -107,6 +112,28 @@ def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=Non
     # más a la derecha = menor y_robot
     return min(candidatas, key=lambda d: d["y_robot"])
 
+def actualizar_inventario(clase_detectada):
+    archivo_path = "inventario.txt"
+    inventario = {}
+
+    # 1. Leer el archivo actual si existe
+    if Path(archivo_path).exists():
+        with open(archivo_path, "r") as f:
+            for linea in f:
+                if ":" in linea:
+                    nombre, cantidad = linea.split(":")
+                    inventario[nombre.strip()] = int(cantidad.strip())
+
+    # 2. Incrementar el contador de la pieza detectada
+    inventario[clase_detectada] = inventario.get(clase_detectada, 0) + 1
+
+    # 3. Guardar los cambios
+    with open(archivo_path, "w") as f:
+        for nombre, cantidad in inventario.items():
+            f.write(f"{nombre}: {cantidad}\n")
+    
+    print(f"📊 Inventario actualizado: {clase_detectada} ahora tiene {inventario[clase_detectada]}")
+
 
 def main(device):
     # 1️⃣ Cargar matriz H y pose de visión (Fuera del loop para no leer disco cada vez)
@@ -126,6 +153,13 @@ def main(device):
             vision_pose["r"]
         )
         suck(device, False)
+
+        # 🛑 EL FILTRO: Solo avanza si el pin 26 está en 1
+        print("⏳ Esperando señal del ESP32...")
+        while GPIO.input(PIN_ENTRADA_ESP) == GPIO.LOW:
+            time.sleep(0.05)
+        
+        print("📸 ¡Pieza detectada! Procesando...")
 
         # 3️⃣ Detectar objetos
         print("\n📸 Capturando imagen y detectando...")
@@ -178,6 +212,10 @@ def main(device):
         
         suck(device, False)
         time.sleep(0.5)
+
+        # --- NUEVO: GESTIÓN DE INVENTARIO ---
+        actualizar_inventario(clase) 
+        # ------------------------------------
         
         # Subir de nuevo para no chocar nada al volver
         move_to_xyzr(device, place["x"], place["y"], Z_SAFE, place["r"])
@@ -185,9 +223,14 @@ def main(device):
         print("🔄 Ciclo completado. Volviendo a posición de visión.")
         # El loop vuelve a empezar automáticamente
 
+        # 🔄 Anti-repetición: Esperamos a que la señal baje antes de volver a mirar
+        # while GPIO.input(PIN_ENTRADA_ESP) == GPIO.HIGH:
+        #     time.sleep(0.1)
+
 if __name__ == "__main__":
     from pydobot import Dobot
 
     port = detectar_puerto()
     device = Dobot(port=port, verbose=False)
     main(device)
+

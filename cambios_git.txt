@@ -8,4 +8,4 @@ source venv/bin/activate
 
 # Corerr script de python:
 python -m Scripts.main
-
+python -m Scripts.Capture.capture_dataset_enter --label IQ_Parts_Reduced_v2

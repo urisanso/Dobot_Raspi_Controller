@@ -76,3 +76,95 @@ def _draw_bbox(image, prediction):
         (0, 255, 0),
         1,
     )
+
+def imprimir_detecciones(detections, min_conf=0.0, ignore_classes=None):
+    """Muestra por pantalla todas las detecciones."""
+    ignore_classes = ignore_classes or []
+
+    print("\n=== DETECCIONES ===")
+    validas = []
+
+    for i, det in enumerate(detections, start=1):
+        clase = det.get("class", "desconocida")
+        conf = det.get("confidence", 0.0)
+
+        if conf < min_conf:
+            continue
+        if clase in ignore_classes:
+            continue
+
+        x = det.get("x", None)
+        y = det.get("y", None)
+        w = det.get("width", None)
+        h = det.get("height", None)
+
+        print(
+            f"[{i}] clase={clase} | "
+            f"conf={conf*100:.2f}% | "
+            f"centro=({x}, {y}) | "
+            f"bbox=({w}, {h})"
+        )
+
+        validas.append(det)
+
+    if not validas:
+        print("No hay detecciones válidas.")
+
+    return validas
+
+
+def elegir_mejor_deteccion(detections, min_conf=0.0, ignore_classes=None):
+    """Devuelve la detección válida con mayor confidence."""
+    ignore_classes = ignore_classes or []
+
+    validas = [
+        det for det in detections
+        if det.get("confidence", 0.0) >= min_conf
+        and det.get("class", "") not in ignore_classes
+    ]
+
+    if not validas:
+        return None
+
+    return max(validas, key=lambda d: d.get("confidence", 0.0))
+
+def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=None):
+    """
+    Devuelve la detección válida más a la derecha.
+    En este sistema: más a la derecha = menor Y en coordenadas robot.
+    """
+    ignore_classes = ignore_classes or []
+    candidatas = []
+
+    for det in detections:
+        clase = det.get("class", "")
+        conf = det.get("confidence", 0.0)
+
+        if conf < min_conf:
+            continue
+        if clase in ignore_classes:
+            continue
+
+        u = det.get("x", None)
+        v = det.get("y", None)
+        if u is None or v is None:
+            continue
+
+        x_robot, y_robot = pixel_to_robot(u, v, H)
+
+        det_ext = det.copy()
+        det_ext["x_robot"] = x_robot
+        det_ext["y_robot"] = y_robot
+
+        print(f"clase= {clase}, x_robot= {x_robot}, y_robot= {y_robot}")
+
+        if (y_robot < MIN_Y_ROBOT) or (y_robot > MAX_Y_ROBOT):
+            continue
+
+        candidatas.append(det_ext)
+
+    if not candidatas:
+        return None
+
+    # más a la derecha = menor y_robot
+    return min(candidatas, key=lambda d: d["y_robot"])

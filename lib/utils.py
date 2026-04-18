@@ -1,6 +1,8 @@
 import json
 import numpy as np
 from pathlib import Path
+import RPi.GPIO as GPIO
+import time
 
 
 def load_homography(json_path):
@@ -59,12 +61,12 @@ def get_bbox_centers(detections, min_conf=0.6, ignore_classes=None):
 
     return centers
 
-def chequear_pulsador(ciclo_activo):
+def chequear_pulsador(ciclo_activo, pin):
     """Retorna el nuevo estado de ciclo_activo si se presionó el botón."""
-    if GPIO.input(PIN_PULSADOR) == GPIO.LOW:
+    if GPIO.input(pin) == GPIO.LOW:
         ciclo_activo = not ciclo_activo
         estado = "▶ INICIADO" if ciclo_activo else "⏹ DETENIDO"
         print(f"\n🔘 Botón presionado → {estado}")
-        while GPIO.input(PIN_PULSADOR) == GPIO.LOW:
+        while GPIO.input(pin) == GPIO.LOW:
             time.sleep(0.05)
     return ciclo_activo

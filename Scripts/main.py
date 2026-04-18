@@ -8,7 +8,7 @@ from lib.roboflow_detector import (
     elegir_mejor_deteccion, elegir_deteccion_mas_derecha
 )
 from lib.utils import (
-    load_homography, pixel_to_robot, get_bbox_centers
+    load_homography, pixel_to_robot, get_bbox_centers,
     chequear_pulsador
 )
 from lib.dobot_utils import (
@@ -48,13 +48,15 @@ def main(device):
     Z_SAFE = 80
     ciclo_activo = False
 
-    print("🤖 Sistema listo. Presioná el botón para iniciar la clasificación.")
+    archivo_inventario = seleccionar_inventario()
+    print(f"\n🤖 Sistema listo. Archivo activo: {archivo_inventario}")
+    print("Presioná el botón para iniciar la clasificación.")
 
     try:
         while True:
             
             # ── MODO ESPERA ──────────────────────────────────────────────
-            ciclo_activo = chequear_pulsador(ciclo_activo)
+            ciclo_activo = chequear_pulsador(ciclo_activo, PIN_PULSADOR)
             if not ciclo_activo:
                 time.sleep(0.1)   # idle liviano, sin quemar CPU
                 continue
@@ -72,13 +74,13 @@ def main(device):
             # Señal del ESP32 (tu lógica original intacta)
             print("⏳ Esperando señal del ESP32...")
             while GPIO.input(PIN_ENTRADA_ESP) == GPIO.LOW:
-                ciclo_activo = chequear_pulsador(ciclo_activo)
+                ciclo_activo = chequear_pulsador(ciclo_activo, PIN_PULSADOR)
                 if not ciclo_activo:          # ← salida rápida si paran mientras espera
                     print("⏹ Ciclo detenido durante espera de ESP32.")
                     break
                 time.sleep(0.05)
             
-            ciclo_activo = chequear_pulsador(ciclo_activo)
+            ciclo_activo = chequear_pulsador(ciclo_activo, PIN_PULSADOR)
             if not ciclo_activo:
                 continue
 
@@ -94,7 +96,9 @@ def main(device):
             target = elegir_deteccion_mas_derecha(
                 detections, H,
                 min_conf=CONFIDENCE_MIN,
-                ignore_classes=IGNORE_CLASSES
+                ignore_classes=IGNORE_CLASSES,
+                miny_robot=MIN_Y_ROBOT, 
+                maxy_robot=MAX_Y_ROBOT
             )
 
             if target is None:
@@ -126,7 +130,7 @@ def main(device):
             suck(device, False)
             time.sleep(0.5)
 
-            actualizar_inventario(clase)
+            actualizar_inventario(clase, archivo_inventario)
 
             move_to_xyzr(device, place["x"], place["y"], Z_SAFE, place["r"])
             print("🔄 Ciclo completado.")

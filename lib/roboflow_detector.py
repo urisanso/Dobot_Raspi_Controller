@@ -2,6 +2,7 @@ import cv2
 import requests
 from pathlib import Path
 from datetime import datetime
+from lib.utils import pixel_to_robot
 
 
 def detect_objects(
@@ -128,7 +129,7 @@ def elegir_mejor_deteccion(detections, min_conf=0.0, ignore_classes=None):
 
     return max(validas, key=lambda d: d.get("confidence", 0.0))
 
-def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=None):
+def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=None, miny_robot=-20, maxy_robot=20):
     """
     Devuelve la detección válida más a la derecha.
     En este sistema: más a la derecha = menor Y en coordenadas robot.
@@ -158,7 +159,7 @@ def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=Non
 
         print(f"clase= {clase}, x_robot= {x_robot}, y_robot= {y_robot}")
 
-        if (y_robot < MIN_Y_ROBOT) or (y_robot > MAX_Y_ROBOT):
+        if (y_robot < miny_robot) or (y_robot > maxy_robot):
             continue
 
         candidatas.append(det_ext)

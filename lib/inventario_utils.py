@@ -1,5 +1,6 @@
 import glob
 from datetime import date
+from pathlib import Path
 
 # ── NUEVO: gestión de archivo de inventario ──────────────────────────────────
 

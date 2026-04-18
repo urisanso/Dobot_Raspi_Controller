@@ -3,11 +3,18 @@ import time
 import RPi.GPIO as GPIO
 from pathlib import Path
 
-from lib.roboflow_detector import detect_objects
+from lib.roboflow_detector import (
+    detect_objects, imprimir_detecciones, 
+    elegir_mejor_deteccion, elegir_deteccion_mas_derecha
+)
 from lib.utils import load_homography, pixel_to_robot, get_bbox_centers
 from lib.dobot_utils import (
     detectar_puerto, home_fisico, home_logico,
     suck, move_to_xyzr, move_joints, load_places, move_to_xyzr_joint
+)
+from lib.inventario_utils import (
+    buscar_ultimo_inventario, nuevo_nombre_inventario, 
+    seleccionar_inventario, actualizar_inventario
 )
 
 # === CONFIG ===
@@ -31,119 +38,6 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIN_ENTRADA_ESP, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(PIN_PULSADOR,    GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-def imprimir_detecciones(detections, min_conf=0.0, ignore_classes=None):
-    """Muestra por pantalla todas las detecciones."""
-    ignore_classes = ignore_classes or []
-
-    print("\n=== DETECCIONES ===")
-    validas = []
-
-    for i, det in enumerate(detections, start=1):
-        clase = det.get("class", "desconocida")
-        conf = det.get("confidence", 0.0)
-
-        if conf < min_conf:
-            continue
-        if clase in ignore_classes:
-            continue
-
-        x = det.get("x", None)
-        y = det.get("y", None)
-        w = det.get("width", None)
-        h = det.get("height", None)
-
-        print(
-            f"[{i}] clase={clase} | "
-            f"conf={conf*100:.2f}% | "
-            f"centro=({x}, {y}) | "
-            f"bbox=({w}, {h})"
-        )
-
-        validas.append(det)
-
-    if not validas:
-        print("No hay detecciones válidas.")
-
-    return validas
-
-
-def elegir_mejor_deteccion(detections, min_conf=0.0, ignore_classes=None):
-    """Devuelve la detección válida con mayor confidence."""
-    ignore_classes = ignore_classes or []
-
-    validas = [
-        det for det in detections
-        if det.get("confidence", 0.0) >= min_conf
-        and det.get("class", "") not in ignore_classes
-    ]
-
-    if not validas:
-        return None
-
-    return max(validas, key=lambda d: d.get("confidence", 0.0))
-
-def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=None):
-    """
-    Devuelve la detección válida más a la derecha.
-    En este sistema: más a la derecha = menor Y en coordenadas robot.
-    """
-    ignore_classes = ignore_classes or []
-    candidatas = []
-
-    for det in detections:
-        clase = det.get("class", "")
-        conf = det.get("confidence", 0.0)
-
-        if conf < min_conf:
-            continue
-        if clase in ignore_classes:
-            continue
-
-        u = det.get("x", None)
-        v = det.get("y", None)
-        if u is None or v is None:
-            continue
-
-        x_robot, y_robot = pixel_to_robot(u, v, H)
-
-        det_ext = det.copy()
-        det_ext["x_robot"] = x_robot
-        det_ext["y_robot"] = y_robot
-
-        print(f"clase= {clase}, x_robot= {x_robot}, y_robot= {y_robot}")
-
-        if (y_robot < MIN_Y_ROBOT) or (y_robot > MAX_Y_ROBOT):
-            continue
-
-        candidatas.append(det_ext)
-
-    if not candidatas:
-        return None
-
-    # más a la derecha = menor y_robot
-    return min(candidatas, key=lambda d: d["y_robot"])
-
-def actualizar_inventario(clase_detectada):
-    archivo_path = "inventario.txt"
-    inventario = {}
-
-    # 1. Leer el archivo actual si existe
-    if Path(archivo_path).exists():
-        with open(archivo_path, "r") as f:
-            for linea in f:
-                if ":" in linea:
-                    nombre, cantidad = linea.split(":")
-                    inventario[nombre.strip()] = int(cantidad.strip())
-
-    # 2. Incrementar el contador de la pieza detectada
-    inventario[clase_detectada] = inventario.get(clase_detectada, 0) + 1
-
-    # 3. Guardar los cambios
-    with open(archivo_path, "w") as f:
-        for nombre, cantidad in inventario.items():
-            f.write(f"{nombre}: {cantidad}\n")
-    
-    print(f"📊 Inventario actualizado: {clase_detectada} ahora tiene {inventario[clase_detectada]}")
 
 def chequear_pulsador(ciclo_activo):
     """Retorna el nuevo estado de ciclo_activo si se presionó el botón."""

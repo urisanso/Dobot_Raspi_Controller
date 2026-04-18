@@ -58,3 +58,13 @@ def get_bbox_centers(detections, min_conf=0.6, ignore_classes=None):
         )
 
     return centers
+
+def chequear_pulsador(ciclo_activo):
+    """Retorna el nuevo estado de ciclo_activo si se presionó el botón."""
+    if GPIO.input(PIN_PULSADOR) == GPIO.LOW:
+        ciclo_activo = not ciclo_activo
+        estado = "▶ INICIADO" if ciclo_activo else "⏹ DETENIDO"
+        print(f"\n🔘 Botón presionado → {estado}")
+        while GPIO.input(PIN_PULSADOR) == GPIO.LOW:
+            time.sleep(0.05)
+    return ciclo_activo

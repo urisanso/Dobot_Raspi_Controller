@@ -7,7 +7,10 @@ from lib.roboflow_detector import (
     detect_objects, imprimir_detecciones, 
     elegir_mejor_deteccion, elegir_deteccion_mas_derecha
 )
-from lib.utils import load_homography, pixel_to_robot, get_bbox_centers
+from lib.utils import (
+    load_homography, pixel_to_robot, get_bbox_centers
+    chequear_pulsador
+)
 from lib.dobot_utils import (
     detectar_puerto, home_fisico, home_logico,
     suck, move_to_xyzr, move_joints, load_places, move_to_xyzr_joint
@@ -37,17 +40,6 @@ PIN_PULSADOR    = 17
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIN_ENTRADA_ESP, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(PIN_PULSADOR,    GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-
-def chequear_pulsador(ciclo_activo):
-    """Retorna el nuevo estado de ciclo_activo si se presionó el botón."""
-    if GPIO.input(PIN_PULSADOR) == GPIO.LOW:
-        ciclo_activo = not ciclo_activo
-        estado = "▶ INICIADO" if ciclo_activo else "⏹ DETENIDO"
-        print(f"\n🔘 Botón presionado → {estado}")
-        while GPIO.input(PIN_PULSADOR) == GPIO.LOW:
-            time.sleep(0.05)
-    return ciclo_activo
 
 def main(device):
     # 1️⃣ Cargar matriz H y pose de visión (Fuera del loop para no leer disco cada vez)

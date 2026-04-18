@@ -1,27 +1,29 @@
 import glob
+import os
 from datetime import date
 from pathlib import Path
 
-# ── NUEVO: gestión de archivo de inventario ──────────────────────────────────
+CARPETA_INVENTARIO = Path("Inventario")
 
 def buscar_ultimo_inventario():
-    """Devuelve el archivo inventario_*.txt más reciente, o None si no hay ninguno."""
-    archivos = sorted(glob.glob("inventario_*.txt"), reverse=True)
-    return archivos[0] if archivos else None
+    """Devuelve el archivo inventario_*.txt más reciente dentro de Inventario/, o None."""
+    archivos = sorted(CARPETA_INVENTARIO.glob("inventario_*.txt"), reverse=True)
+    return str(archivos[0]) if archivos else None
 
 def nuevo_nombre_inventario():
-    """Genera un nombre con la fecha de hoy y pide el nro. de kit al usuario."""
+    """Crea la carpeta Inventario/ si no existe, genera nombre con fecha y nro. de kit."""
+    CARPETA_INVENTARIO.mkdir(exist_ok=True)
     hoy = date.today().strftime("%Y-%m-%d")
     while True:
         nro = input("  → Número de kit: ").strip()
         if nro:
-            return f"inventario_{hoy}_kit{nro}.txt"
+            return str(CARPETA_INVENTARIO / f"inventario_{hoy}_kit{nro}.txt")
         print("  El número de kit no puede estar vacío.")
 
 def seleccionar_inventario():
     """
     Al arrancar, pregunta si se quiere continuar con el último inventario
-    o empezar uno nuevo. Devuelve el path del archivo a usar.
+    o empezar uno nuevo. Devuelve el path completo del archivo a usar.
     """
     print("\n" + "="*50)
     print("  GESTIÓN DE INVENTARIO")
@@ -48,10 +50,8 @@ def seleccionar_inventario():
         print(f"  ✅ Nuevo inventario: {nombre}")
         return nombre
 
-# ── Modificación de actualizar_inventario ───────────────────────────────────
-
 def actualizar_inventario(clase_detectada, archivo_path):
-    """Ahora recibe el path del archivo en lugar de usar uno fijo."""
+    """Recibe el path completo — no necesita saber nada de la carpeta."""
     inventario = {}
 
     if Path(archivo_path).exists():

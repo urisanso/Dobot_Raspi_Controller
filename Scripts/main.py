@@ -12,12 +12,14 @@ from lib.dobot_utils import (
 
 # === CONFIG ===
 API_KEY = "6CpctoE5C7mQOrwSaDWt"
-PROJECT = "model_ping_reduced"
+PROJECT = "model_ping_reduced_v2-0" #model_ping_reduced_v2-0/2
 VERSION = 2
 
 Z_PICK = 43
 CONFIDENCE_MIN = 0.8
 IGNORE_CLASSES = ["vacio"]
+MIN_Y_ROBOT = -20
+MAX_Y_ROBOT = 20
 
 H_JSON = Path("JSON/Matriz_H.json")
 
@@ -107,6 +109,12 @@ def elegir_deteccion_mas_derecha(detections, H, min_conf=0.0, ignore_classes=Non
         det_ext = det.copy()
         det_ext["x_robot"] = x_robot
         det_ext["y_robot"] = y_robot
+
+        print(f"clase= {clase}, x_robot= {x_robot}, y_robot= {y_robot}")
+
+        if (y_robot < MIN_Y_ROBOT) or (y_robot > MAX_Y_ROBOT):
+            continue
+
         candidatas.append(det_ext)
 
     if not candidatas:

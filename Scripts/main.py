@@ -19,7 +19,7 @@ Z_PICK = 43
 CONFIDENCE_MIN = 0.8
 IGNORE_CLASSES = ["vacio"]
 MIN_Y_ROBOT = -20
-MAX_Y_ROBOT = 20
+MAX_Y_ROBOT = 45
 
 H_JSON = Path("JSON/Matriz_H.json")
 

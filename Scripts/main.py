@@ -125,7 +125,7 @@ def main(device):
 
             move_to_xyzr(device, Xr_corr, Yr_corr, Z_SAFE, vision_pose["r"])
             move_to_xyzr_joint(device, place["x"], place["y"], Z_SAFE, place["r"])
-            move_to_xyzr(device, place["x"], place["y"], place["z"], place["r"])
+            move_to_xyzr(device, place["x"], place["y"], Z_SAFE, place["r"])
 
             suck(device, False)
             time.sleep(0.5)

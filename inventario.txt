@@ -1,8 +1,6 @@
 ConversorB_2x2: 17
-Engranaje: 14
 Polea: 21
 Esquina_Grande: 20
-Buje: 3
 Viga_2x2: 15
 Esquina_Chica: 6
 ConversorB_1_5x1: 11

@@ -1,0 +1,5 @@
+motor nema 17: https://protosupplies.com/product/stepper-motor-nema-17-1-2a-ks42sth40-1204a/
+esp32: https://docs.zephyrproject.org/latest/boards/others/doit_esp32_devkit_v1/doc/index.html
+laser ky-008: https://www.watelectronics.com/ky-008-laser-module/
+
+dobot magician lite: https://www.dobot-robots.com/products/education/magician-lite.html --> Specs
